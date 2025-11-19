@@ -1,0 +1,27 @@
+@"
+# Виртуальные окружения Python
+venv/
+.venv/
+env/
+ENV/
+
+# Папки и файлы Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# База данных и результаты
+*.db
+*.sqlite3
+result.json
+result.xml
+rooms.json
+students.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# VS Code настройки (по желанию)
+.vscode/
+"@ | Out-File -Encoding utf8 .gitignore
