@@ -29,4 +29,4 @@ students.json
 # Секреты и конфиги
 .env
 .env.local
-config.py  # можно даже и его
+config.py  # не обязательно

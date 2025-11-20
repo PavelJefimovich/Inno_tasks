@@ -1,16 +1,13 @@
-"""Модуль с бизнес-логикой: создание индексов и выполнение аналитических запросов."""
-
 from typing import List, Dict, Any, Sequence
 from database import Database
 from config import CURRENT_DATE
 
 
 class QueryService:
-    """Сервис для создания индексов и получения аналитических результатов."""
 
     @staticmethod
     def create_indexes(db: Database) -> None:
-        """Создаёт составной индекс для ускорения всех аналитических запросов."""
+        """create index """
         try:
             db.execute("ALTER TABLE students DROP INDEX IF EXISTS idx_opt")
         except Exception:
@@ -21,16 +18,13 @@ class QueryService:
 
     @staticmethod
     def _rows_to_dicts(rows: Sequence[tuple], columns: List[str]) -> List[Dict[str, Any]]:
-        """Преобразует список кортежей из БД в список словарей."""
+        """reaog list of tuples in DB to list of dicts """
         return [dict(zip(columns, row)) for row in rows]
 
-    # ──────────────────────────────────────────────────────────────
-    # Отдельные методы для каждого запроса — чисто и красиво!
-    # ──────────────────────────────────────────────────────────────
 
     @staticmethod
     def get_rooms_with_students_count(db: Database) -> List[Dict[str, Any]]:
-        """1. Количество студентов в каждой комнате."""
+        """1.  """
         rows = db.fetchall("""
             SELECT 
                 r.name AS room, 
@@ -44,7 +38,7 @@ class QueryService:
 
     @staticmethod
     def get_top_5_youngest_rooms(db: Database) -> List[Dict[str, Any]]:
-        """2. Топ-5 комнат с самым молодым средним возрастом."""
+        """2.  """
         rows = db.fetchall(f"""
             SELECT 
                 r.name AS room,
@@ -59,7 +53,7 @@ class QueryService:
 
     @staticmethod
     def get_top_5_largest_age_diff(db: Database) -> List[Dict[str, Any]]:
-        """3. Топ-5 комнат с наибольшей разницей в возрасте."""
+        """3.  """
         rows = db.fetchall(f"""
             SELECT 
                 r.name AS room,
@@ -78,7 +72,7 @@ class QueryService:
 
     @staticmethod
     def get_mixed_gender_rooms(db: Database) -> List[Dict[str, Any]]:
-        """4. Комнаты, где живут и мальчики, и девочки."""
+        """4.  """
         rows = db.fetchall("""
             SELECT r.name AS room
             FROM rooms r
@@ -89,13 +83,12 @@ class QueryService:
         """)
         return QueryService._rows_to_dicts(rows, ["room"])
 
-    # ──────────────────────────────────────────────────────────────
-    # Главная функция — просто собирает всё вместе
-    # ──────────────────────────────────────────────────────────────
+ 
+    # Get all res together
+ 
 
     @staticmethod
     def get_results(db: Database) -> List[Dict[str, Any]]:
-        """Собирает результаты всех аналитических запросов в один список."""
         return [
             {"type": "rooms_with_students", "data": QueryService.get_rooms_with_students_count(db)},
             {"type": "top_5_youngest_rooms", "data": QueryService.get_top_5_youngest_rooms(db)},

@@ -1,5 +1,3 @@
-"""Точка входа в приложение: загрузка данных, выполнение запросов и вывод результатов."""
-
 from __future__ import annotations
 
 import argparse
@@ -11,17 +9,15 @@ from reporter import Reporter
 
 
 def parse_args() -> argparse.Namespace:
-    """Настраивает и возвращает парсер командной строки с аргументами.
+    """set and return parser .
 
-    Поддерживаемые параметры:
-        rooms          — путь к rooms.json (по умолчанию рядом со скриптом)
-        students       — путь к students.json
-        -j / --json    — вывод в JSON (по умолчанию)
-        -x / --xml     — вывод в XML
-        -o / --output  — сохранить результат в файл
+    Params:
+        rooms          — path to rooms.json  
+        students       — path to students.json
+        -j / --json    — output in JSON 
+        -x / --xml     — output in XML
+        -o / --output  — save res as fike
 
-    Returns:
-        Объект argparse.Namespace с распарсенными аргументами.
     """
     parser = argparse.ArgumentParser(
         description="Hostel analytics: load JSON → MySQL → analytical queries → JSON/XML output"
@@ -70,10 +66,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> None:
-    """Основная логика приложения."""
+    """main logic"""
     args = parse_args()
 
-    # Разрешаем пути и проверяем существование файлов
+    #set tpathes and check existance 
     rooms_path = args.rooms.resolve()
     students_path = args.students.resolve()
 
@@ -88,16 +84,16 @@ def main() -> None:
     print(f"   students.json → {students_path}")
     print("-" * 60)
 
-    # Инициализация БД
+    # initialise DB
     db = Database()
     db.connect()
     db.create_tables()
 
-    # Загрузка данных
+    # data load
     DataLoader.load_rooms(db, str(rooms_path))
     DataLoader.load_students(db, str(students_path))
 
-    # Аналитика
+    # index
     QueryService.create_indexes(db)
     results = QueryService.get_results(db)
 
@@ -105,12 +101,11 @@ def main() -> None:
     print("Analytical results:")
     print("=" * 60)
 
-    # Определяем путь и формат вывода
+    # set path and output format
     output_path: Path | None = args.output
     format_type: str = args.format
 
     if output_path:
-        # Автоматически добавляем правильное расширение
         if output_path.suffix not in {".json", ".xml"}:
             output_path = output_path.with_suffix(f".{format_type}")
 
@@ -119,7 +114,6 @@ def main() -> None:
         else:
             Reporter.to_xml(results, output_path)
     else:
-        # Вывод в консоль
         if format_type == "json":
             Reporter.to_json(results)
         else:

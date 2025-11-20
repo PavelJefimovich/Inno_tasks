@@ -1,29 +1,17 @@
-"""Модуль для загрузки данных из JSON-файлов в базу данных."""
-
 import json
 from typing import Any
 from database import Database
 
 
 class DataLoader:
-    """Класс для загрузки данных о комнатах и студентах из JSON-файлов."""
 
     @staticmethod
     def load_rooms(db: Database, path: str) -> None:
-        """Очищает таблицу rooms (и зависимую students из-за FK) и загружает новые комнаты.
-
-        Args:
-            db: Подключённый объект Database для выполнения запросов.
-            path: Путь к файлу rooms.json в формате строки.
-
-        Raises:
-            json.JSONDecodeError: Если файл не является валидным JSON.
-            OSError: Если файл не найден или нет прав на чтение.
-        """
+        """Clear table rooms and load  """
         with open(path, encoding="utf-8") as f:
             rooms: list[dict[str, Any]] = json.load(f)
 
-        # Сначала удаляем студентов (из-за внешнего ключа), потом комнаты
+        # delete students (because of foreign key) then rooms 
         db.execute("DELETE FROM students")
         db.execute("DELETE FROM rooms")
 
@@ -35,22 +23,13 @@ class DataLoader:
 
     @staticmethod
     def load_students(db: Database, path: str) -> None:
-        """Очищает таблицу students и загружает новых студентов из JSON.
-
-        Поля в JSON:
+        """Clear table students and load .
+        
+        field:
             - name: str
-            - birthday: str в формате YYYY-MM-DD
-            - sex: "M" или "F"
-            - room: int (id комнаты, он же room_id в БД)
-
-        Args:
-            db: Подключённый объект Database.
-            path: Путь к файлу students.json.
-
-        Raises:
-            json.JSONDecodeError: Если файл невалидный.
-            OSError: Если файл недоступен.
-            KeyError: Если в JSON отсутствует нужное поле (лучше отловить на этапе валидации).
+            - birthday: str  YYYY-MM-DD
+            - sex: "M" or "F"
+            - room: int (room id , room_id in DB) 
         """
         with open(path, encoding="utf-8") as f:
             students: list[dict[str, Any]] = json.load(f)
