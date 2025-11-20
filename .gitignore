@@ -25,3 +25,8 @@ students.json
 # VS Code настройки (по желанию)
 .vscode/
 "@ | Out-File -Encoding utf8 .gitignore
+
+# Секреты и конфиги
+.env
+.env.local
+config.py  # можно даже и его

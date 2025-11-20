@@ -1,3 +1,7 @@
+"""Точка входа в приложение: загрузка данных, выполнение запросов и вывод результатов."""
+
+from __future__ import annotations
+
 import argparse
 from pathlib import Path
 from database import Database
@@ -7,8 +11,20 @@ from reporter import Reporter
 
 
 def parse_args() -> argparse.Namespace:
+    """Настраивает и возвращает парсер командной строки с аргументами.
+
+    Поддерживаемые параметры:
+        rooms          — путь к rooms.json (по умолчанию рядом со скриптом)
+        students       — путь к students.json
+        -j / --json    — вывод в JSON (по умолчанию)
+        -x / --xml     — вывод в XML
+        -o / --output  — сохранить результат в файл
+
+    Returns:
+        Объект argparse.Namespace с распарсенными аргументами.
+    """
     parser = argparse.ArgumentParser(
-        description="Data processing: loading, query, output in JSON/XML"
+        description="Hostel analytics: load JSON → MySQL → analytical queries → JSON/XML output"
     )
 
     parser.add_argument(
@@ -16,16 +32,15 @@ def parse_args() -> argparse.Namespace:
         nargs="?",
         type=Path,
         default=Path(__file__).parent / "rooms.json",
-        help="Path to rooms.json "
+        help="Path to rooms.json (default: %(default)s)"
     )
     parser.add_argument(
         "students",
         nargs="?",
         type=Path,
         default=Path(__file__).parent / "students.json",
-        help="Path to  students.json "
+        help="Path to students.json (default: %(default)s)"
     )
-
 
     group = parser.add_mutually_exclusive_group()
     group.add_argument(
@@ -33,96 +48,85 @@ def parse_args() -> argparse.Namespace:
         action="store_const",
         dest="format",
         const="json",
-        help="Output in JSON "
+        help="Output result in JSON format (default)"
     )
     group.add_argument(
         "-x", "--xml",
         action="store_const",
         dest="format",
         const="xml",
-        help="Output in XML"
+        help="Output result in XML format"
     )
 
     parser.add_argument(
         "-o", "--output",
         type=Path,
         default=None,
-        help="Save resuslt in file "
+        help="Save result to file. Extension .json or .xml will be added automatically if missing"
     )
 
-    parser.set_defaults(format="json")   
+    parser.set_defaults(format="json")
     return parser.parse_args()
 
 
 def main() -> None:
+    """Основная логика приложения."""
     args = parse_args()
 
+    # Разрешаем пути и проверяем существование файлов
     rooms_path = args.rooms.resolve()
     students_path = args.students.resolve()
 
-     
     for path, name in [(rooms_path, "rooms.json"), (students_path, "students.json")]:
         if not path.is_file():
-            print(f"Error: file {name} is not found !")
-            print(f"   Path: {path}")
+            print(f"Error: file '{name}' not found!")
+            print(f"   Expected path: {path}")
             raise SystemExit(1)
 
-    print("Files are founded:")
+    print("Input files found:")
     print(f"   rooms.json   → {rooms_path}")
     print(f"   students.json → {students_path}")
     print("-" * 60)
 
+    # Инициализация БД
     db = Database()
     db.connect()
+    db.create_tables()
 
-
-    db.execute("DROP TABLE IF EXISTS students")
-    db.execute("DROP TABLE IF EXISTS rooms")
-    db.execute("CREATE TABLE rooms (id INT PRIMARY KEY, name VARCHAR(255) NOT NULL)")
-    db.execute("""
-        CREATE TABLE students (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            birthday DATE NOT NULL,
-            sex ENUM('M','F') NOT NULL,
-            room_id INT NOT NULL,
-            FOREIGN KEY (room_id) REFERENCES rooms(id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    """)
-
+    # Загрузка данных
     DataLoader.load_rooms(db, str(rooms_path))
     DataLoader.load_students(db, str(students_path))
 
+    # Аналитика
     QueryService.create_indexes(db)
     results = QueryService.get_results(db)
 
     print("\n" + "=" * 60)
-    print("Result:")
+    print("Analytical results:")
     print("=" * 60)
 
- 
-    output_path = args.output
-    format_type = args.format
+    # Определяем путь и формат вывода
+    output_path: Path | None = args.output
+    format_type: str = args.format
 
     if output_path:
- 
+        # Автоматически добавляем правильное расширение
         if output_path.suffix not in {".json", ".xml"}:
             output_path = output_path.with_suffix(f".{format_type}")
 
         if format_type == "json":
-            Reporter.to_json(results, str(output_path))
-        else:  
-            Reporter.to_xml(results, str(output_path))
-
-        print(f"Result is saved in {output_path}")
-    else:
-
-        if format_type == "json":
-            Reporter.to_json(results)         
+            Reporter.to_json(results, output_path)
         else:
-            Reporter.to_xml(results)          
+            Reporter.to_xml(results, output_path)
+    else:
+        # Вывод в консоль
+        if format_type == "json":
+            Reporter.to_json(results)
+        else:
+            Reporter.to_xml(results)
 
     db.close()
+    print("\nDone! Database connection closed.")
 
 
 if __name__ == "__main__":
